@@ -1,3 +1,5 @@
+
+var globalCreatedEdges = [];
 var __extends = this.__extends || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
@@ -20492,11 +20494,15 @@ var BABYLON;
             // four classes.
             var polygonType = 0;
             var types = [];
+var firstCoplanarVertex;
             for (var i = 0; i < polygon.vertices.length; i++) {
                 var t = BABYLON.Vector3.Dot(this.normal, polygon.vertices[i].pos) - this.w;
                 var type = (t < -Plane.EPSILON) ? BACK : (t > Plane.EPSILON) ? FRONT : COPLANAR;
                 polygonType |= type;
                 types.push(type);
+if ( type == COPLANAR ) {
+  firstCoplanarVertex = polygon.vertices[i];
+}
             }
             switch (polygonType) {
                 case COPLANAR:
@@ -20510,6 +20516,8 @@ var BABYLON;
                     break;
                 case SPANNING:
                     var f = [], b = [];
+// console.log("spanning face")
+var createdVerticies = [];
                     for (i = 0; i < polygon.vertices.length; i++) {
                         var j = (i + 1) % polygon.vertices.length;
                         var ti = types[i], tj = types[j];
@@ -20521,10 +20529,28 @@ var BABYLON;
                         if ((ti | tj) == SPANNING) {
                             t = (this.w - BABYLON.Vector3.Dot(this.normal, vi.pos)) / BABYLON.Vector3.Dot(this.normal, vj.pos.subtract(vi.pos));
                             var v = vi.interpolate(vj, t);
+// console.log("creating a point ");
+createdVerticies.push(v);
                             f.push(v);
                             b.push(v.clone());
                         }
                     }
+if ( createdVerticies.length == 1 && ! firstCoplanarVertex ) {
+throw "unknown situation: only one vertex created from split";
+}
+if ( createdVerticies.length < 0 ) {
+throw "no verticies created for split";
+}
+if ( createdVerticies.length > 2 ) {
+throw "too many verticies created for split";
+}
+if ( createdVerticies.length == 2 ) {
+  globalCreatedEdges.push(createdVerticies);
+}
+else if ( createdVerticies.length == 1 && firstCoplanarVertex ) {
+  globalCreatedEdges.push([ createdVerticies[0], firstCoplanarVertex ]);
+}
+
                     if (f.length >= 3) {
                         var poly = new Polygon(f, polygon.shared);
                         if (poly.plane)
@@ -20787,10 +20813,10 @@ var BABYLON;
             var a = new Node(this.clone().polygons);
             var b = new Node(csg.clone().polygons);
             a.invert();
-            b.clipTo(a);
+            //b.clipTo(a);
             b.invert();
-            a.clipTo(b);
-            b.clipTo(a);
+            //a.clipTo(b);
+            //b.clipTo(a);
             a.build(b.allPolygons());
             a.invert();
             return CSG.FromPolygons(a.allPolygons()).copyTransformAttributes(this);

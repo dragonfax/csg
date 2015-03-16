@@ -91,6 +91,31 @@ var createScene = function () {
   var newCSG = boxCSG.intersect(sphereCSG);
   var newCSGMesh = newCSG.toMesh("new_csg", sphere.material, scene);
   newCSGMesh.position = new BABYLON.Vector3(0,0,0);
+
+newCSGMesh.dispose();
+
+console.log("done creating scene");
+console.log("edges created " + globalCreatedEdges.length);
+
+var alreadyCreatedLines = {};
+var lines = [];
+for ( var i = 0; i < globalCreatedEdges.length; i++ ) {
+  var edge = globalCreatedEdges[i];
+  var points = [edge[0].pos, edge[1].pos];
+
+  // unique
+  var pointsHash = "" + points[0] + ":" + points[1];
+  if ( alreadyCreatedLines[pointsHash] ) {
+  }
+  else {
+    var line = BABYLON.Mesh.CreateLines("edges" + i,points,scene);
+    lines.push(line);
+    alreadyCreatedLines[pointsHash] = true;
+  }
+}
+
+console.log("lines created " + lines.length);
+
   
     return scene;
 
