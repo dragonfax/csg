@@ -20813,7 +20813,7 @@ else if ( createdVerticies.length == 1 && firstCoplanarVertex ) {
             var a = new Node(this.clone().polygons);
             var b = new Node(csg.clone().polygons);
             a.invert();
-            //b.clipTo(a);
+            b.clipTo(a);
             b.invert();
             //a.clipTo(b);
             //b.clipTo(a);
