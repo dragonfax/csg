@@ -39,43 +39,62 @@
   var engine = new BABYLON.Engine(canvas, true);
 
 
-// This begins the creation of a function that we will 'call' just after it's built
-  var createScene = function () {
+var createScene = function () {
 
-    // Now create a basic Babylon Scene object 
+    // This creates a basic Babylon Scene object (non-mesh)
     var scene = new BABYLON.Scene(engine);
 
-    // Change the scene background color to green.
-    scene.clearColor = new BABYLON.Color3(0, 1, 0);
-
-    // This creates and positions a free camera
-    var camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 5, -10), scene);
-
+    // This creates and positions a free camera (non-mesh)
+    // var camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 5, -10), scene);
+  var camera = new BABYLON.ArcRotateCamera("Camera", 3 * Math.PI / 2, Math.PI / 8, 5, BABYLON.Vector3.Zero(), scene);
+  camera.attachControl(canvas, true);
+  
     // This targets the camera to scene origin
-    camera.setTarget(BABYLON.Vector3.Zero());
+    // camera.setTarget(BABYLON.Vector3.Zero());
 
     // This attaches the camera to the canvas
-    camera.attachControl(canvas, false);
+    camera.attachControl(canvas, true);
 
-    // This creates a light, aiming 0,1,0 - to the sky.
+    // This creates a light, aiming 0,1,0 - to the sky (non-mesh)
     var light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
 
-    // Dim the light a small amount
-    light.intensity = .5;
+    // Default intensity is 1. Let's dim the light a small amount
+    light.intensity = 0.7;
 
-    // Let's try our built-in 'sphere' shape. Params: name, subdivisions, size, scene
+    // Our built-in 'sphere' shape. Params: name, subdivs, size, scene
     var sphere = BABYLON.Mesh.CreateSphere("sphere1", 16, 2, scene);
+  var sphereCSG = BABYLON.CSG.FromMesh(sphere);
+  sphere.dispose();
 
     // Move the sphere upward 1/2 its height
-    sphere.position.y = 1;
+    sphere.position.y = 10;
+  // sphere.showBoundingBox = true;
+  // sphere.showSubMeshesBoundingBox = true;
+  // console.log(sphere.subMeshes);
 
-    // Let's try our built-in 'ground' shape.  Params: name, width, depth, subdivisions, scene
+    // Our built-in 'ground' shape. Params: name, width, depth, subdivs, scene
     var ground = BABYLON.Mesh.CreateGround("ground1", 6, 6, 2, scene);
+  var groundCSG = BABYLON.CSG.FromMesh(ground);
+  ground.dispose();
+  
+  ground.position.y = 8;
+  
+  var box = BABYLON.Mesh.CreateBox("box1",1.5,scene);
+  var boxCSG = BABYLON.CSG.FromMesh(box);
+  box.dispose();
+  
+  box.position.y = 12;
+  
+  var newCSG = boxCSG.intersect(sphereCSG);
+  var newCSGMesh = newCSG.toMesh("new_csg", sphere.material, scene);
+  newCSGMesh.position = new BABYLON.Vector3(0,0,0);
+  
+  
 
-    // Leave this function
     return scene;
 
-  };  // End of createScene function
+};
+
 
   var scene = createScene();
 
