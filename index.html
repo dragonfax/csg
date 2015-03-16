@@ -39,6 +39,105 @@
   var engine = new BABYLON.Engine(canvas, true);
 
 
+
+
+function intersect (csg1, csg2) {
+            var a = new BABYLON.Node(csg1.clone().polygons);
+            var b = new BABYLON.Node(csg2.clone().polygons);
+            a.invert();
+            nodeClipTo(b,a);
+            b.invert();
+            nodeClipTo(a,b);
+            nodeClipTo(b,a);
+            a.build(b.allPolygons());
+            a.invert();
+            return BABYLON.CSG.FromPolygons(a.allPolygons()).copyTransformAttributes(this);
+}
+
+function nodeClipTo(node, bsp) {
+            node.polygons = nodeClipPolygons(bsp,node.polygons);
+            if (node.front)
+                node.front.clipTo(bsp);
+            if (node.back)
+                node.back.clipTo(bsp);
+        }
+
+function nodeClipPolygons(node, polygons) {
+            if (!node.plane)
+                return polygons.slice();
+            var front = [], back = [];
+            for (var i = 0; i < polygons.length; i++) {
+                planeSplitPolygon(node.plane, polygons[i], front, back, front, back);
+            }
+            if (this.front) {
+                front = node.front.clipPolygons(front);
+            }
+            if (this.back) {
+                back = node.back.clipPolygons(back);
+            }
+            else {
+                back = [];
+            }
+            return front.concat(back);
+        }
+
+function planeSplitPolygon(plane, polygon, coplanarFront, coplanarBack, front, back) {
+            var COPLANAR = 0;
+            var FRONT = 1;
+            var BACK = 2;
+            var SPANNING = 3;
+            // Classify each point as well as the entire polygon into one of the above
+            // four classes.
+            var polygonType = 0;
+            var types = [];
+            for (var i = 0; i < polygon.vertices.length; i++) {
+                var t = BABYLON.Vector3.Dot(plane.normal, polygon.vertices[i].pos) - plane.w;
+                var type = (t < -BABYLON.Plane.EPSILON) ? BACK : (t > BABYLON.Plane.EPSILON) ? FRONT : COPLANAR;
+                polygonType |= type;
+                types.push(type);
+            }
+            switch (polygonType) {
+                case COPLANAR:
+                    (BABYLON.Vector3.Dot(plane.normal, polygon.plane.normal) > 0 ? coplanarFront : coplanarBack).push(polygon);
+                    break;
+                case FRONT:
+                    front.push(polygon);
+                    break;
+                case BACK:
+                    back.push(polygon);
+                    break;
+                case SPANNING:
+                    var f = [], b = [];
+                    for (i = 0; i < polygon.vertices.length; i++) {
+                        var j = (i + 1) % polygon.vertices.length;
+                        var ti = types[i], tj = types[j];
+                        var vi = polygon.vertices[i], vj = polygon.vertices[j];
+                        if (ti != BACK)
+                            f.push(vi);
+                        if (ti != FRONT)
+                            b.push(ti != BACK ? vi.clone() : vi);
+                        if ((ti | tj) == SPANNING) {
+                            t = (plane.w - BABYLON.Vector3.Dot(plane.normal, vi.pos)) / BABYLON.Vector3.Dot(plane.normal, vj.pos.subtract(vi.pos));
+                            var v = vi.interpolate(vj, t);
+                            f.push(v);
+                            b.push(v.clone());
+                        }
+                    }
+                    if (f.length >= 3) {
+                        var poly = new BABYLON.Polygon(f, polygon.shared);
+                        if (poly.plane)
+                            front.push(poly);
+                    }
+                    if (b.length >= 3) {
+                        poly = new BABYLON.Polygon(b, polygon.shared);
+                        if (poly.plane)
+                            back.push(poly);
+                    }
+                    break;
+            }
+        }
+
+
 var createScene = function () {
 
     // This creates a basic Babylon Scene object (non-mesh)
