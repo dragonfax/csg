@@ -28,113 +28,110 @@
 
    <body>
 
-<canvas id="renderCanvas"></canvas>
+    <canvas id="renderCanvas"></canvas>
 
-<script>
+    <script>
 
-  // Get the canvas element from our HTML above
-  var canvas = document.getElementById("renderCanvas");
+      // Get the canvas element from our HTML above
+      var canvas = document.getElementById("renderCanvas");
 
-  // Load the BABYLON 3D engine
-  var engine = new BABYLON.Engine(canvas, true);
-
-
+      // Load the BABYLON 3D engine
+      var engine = new BABYLON.Engine(canvas, true);
 
 
+      var createScene = function () {
 
-var createScene = function () {
+          // This creates a basic Babylon Scene object (non-mesh)
+          var scene = new BABYLON.Scene(engine);
 
-    // This creates a basic Babylon Scene object (non-mesh)
-    var scene = new BABYLON.Scene(engine);
+          // This creates and positions a free camera (non-mesh)
+          // var camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 5, -10), scene);
+        var camera = new BABYLON.ArcRotateCamera("Camera", 3 * Math.PI / 2, Math.PI / 8, 5, BABYLON.Vector3.Zero(), scene);
+        camera.attachControl(canvas, true);
+        
+          // This targets the camera to scene origin
+          // camera.setTarget(BABYLON.Vector3.Zero());
 
-    // This creates and positions a free camera (non-mesh)
-    // var camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 5, -10), scene);
-  var camera = new BABYLON.ArcRotateCamera("Camera", 3 * Math.PI / 2, Math.PI / 8, 5, BABYLON.Vector3.Zero(), scene);
-  camera.attachControl(canvas, true);
-  
-    // This targets the camera to scene origin
-    // camera.setTarget(BABYLON.Vector3.Zero());
+          // This attaches the camera to the canvas
+          camera.attachControl(canvas, true);
 
-    // This attaches the camera to the canvas
-    camera.attachControl(canvas, true);
+          // This creates a light, aiming 0,1,0 - to the sky (non-mesh)
+          var light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
 
-    // This creates a light, aiming 0,1,0 - to the sky (non-mesh)
-    var light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
+          // Default intensity is 1. Let's dim the light a small amount
+          light.intensity = 0.7;
 
-    // Default intensity is 1. Let's dim the light a small amount
-    light.intensity = 0.7;
+          // Our built-in 'sphere' shape. Params: name, subdivs, size, scene
+          var sphere = BABYLON.Mesh.CreateSphere("sphere1", 16, 2, scene);
+        var sphereCSG = BABYLON.CSG.FromMesh(sphere);
+        sphere.dispose();
 
-    // Our built-in 'sphere' shape. Params: name, subdivs, size, scene
-    var sphere = BABYLON.Mesh.CreateSphere("sphere1", 16, 2, scene);
-  var sphereCSG = BABYLON.CSG.FromMesh(sphere);
-  sphere.dispose();
+          // Move the sphere upward 1/2 its height
+          sphere.position.y = 10;
+        // sphere.showBoundingBox = true;
+        // sphere.showSubMeshesBoundingBox = true;
+        // console.log(sphere.subMeshes);
 
-    // Move the sphere upward 1/2 its height
-    sphere.position.y = 10;
-  // sphere.showBoundingBox = true;
-  // sphere.showSubMeshesBoundingBox = true;
-  // console.log(sphere.subMeshes);
+          // Our built-in 'ground' shape. Params: name, width, depth, subdivs, scene
+          var ground = BABYLON.Mesh.CreateGround("ground1", 6, 6, 2, scene);
+        var groundCSG = BABYLON.CSG.FromMesh(ground);
+        ground.dispose();
+        
+        ground.position.y = 8;
+        
+        var box = BABYLON.Mesh.CreateBox("box1",1.5,scene);
+        var boxCSG = BABYLON.CSG.FromMesh(box);
+        box.dispose();
+        
+        box.position.y = 12;
+        
+        var newCSG = boxCSG.intersect(sphereCSG);
+        var newCSGMesh = newCSG.toMesh("new_csg", sphere.material, scene);
+        newCSGMesh.position = new BABYLON.Vector3(0,0,0);
 
-    // Our built-in 'ground' shape. Params: name, width, depth, subdivs, scene
-    var ground = BABYLON.Mesh.CreateGround("ground1", 6, 6, 2, scene);
-  var groundCSG = BABYLON.CSG.FromMesh(ground);
-  ground.dispose();
-  
-  ground.position.y = 8;
-  
-  var box = BABYLON.Mesh.CreateBox("box1",1.5,scene);
-  var boxCSG = BABYLON.CSG.FromMesh(box);
-  box.dispose();
-  
-  box.position.y = 12;
-  
-  var newCSG = boxCSG.intersect(sphereCSG);
-  var newCSGMesh = newCSG.toMesh("new_csg", sphere.material, scene);
-  newCSGMesh.position = new BABYLON.Vector3(0,0,0);
+        newCSGMesh.dispose();
 
-newCSGMesh.dispose();
+        console.log("done creating scene");
+        console.log("edges created " + globalCreatedEdges.length);
 
-console.log("done creating scene");
-console.log("edges created " + globalCreatedEdges.length);
+        var alreadyCreatedLines = {};
+        var lines = [];
+        for ( var i = 0; i < globalCreatedEdges.length; i++ ) {
+          var edge = globalCreatedEdges[i];
+          var points = [edge[0].pos, edge[1].pos];
 
-var alreadyCreatedLines = {};
-var lines = [];
-for ( var i = 0; i < globalCreatedEdges.length; i++ ) {
-  var edge = globalCreatedEdges[i];
-  var points = [edge[0].pos, edge[1].pos];
+          // unique
+          var pointsHash = "" + points[0] + ":" + points[1];
+          if ( alreadyCreatedLines[pointsHash] ) {
+          }
+          else {
+            var line = BABYLON.Mesh.CreateLines("edges" + i,points,scene);
+            lines.push(line);
+            alreadyCreatedLines[pointsHash] = true;
+          }
+        }
 
-  // unique
-  var pointsHash = "" + points[0] + ":" + points[1];
-  if ( alreadyCreatedLines[pointsHash] ) {
-  }
-  else {
-    var line = BABYLON.Mesh.CreateLines("edges" + i,points,scene);
-    lines.push(line);
-    alreadyCreatedLines[pointsHash] = true;
-  }
-}
+        console.log("lines created " + lines.length);
 
-console.log("lines created " + lines.length);
+        
+          return scene;
 
-  
-    return scene;
-
-};
-
-
-  var scene = createScene();
-
- // Register a render loop to repeatedly render the scene
-  engine.runRenderLoop(function () {
-    scene.render();
-  });
+      };
 
 
- // Watch for browser/canvas resize events
-  window.addEventListener("resize", function () {
-    engine.resize();
-  });
-</script>
+      var scene = createScene();
+
+     // Register a render loop to repeatedly render the scene
+      engine.runRenderLoop(function () {
+        scene.render();
+      });
+
+
+     // Watch for browser/canvas resize events
+      window.addEventListener("resize", function () {
+        engine.resize();
+      });
+    </script>
 
    </body>
 
