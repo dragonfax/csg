@@ -75,20 +75,32 @@
       var lines = [];
       var alpha = 0;
 
-      var sphereCSG;
-      var sphereMaterial;
+      //var sphereCSG;
+      //var sphereMaterial;
+      var groundCSG;
+      var groundMaterial;
       var box;
 
       function createInitialMeshes(scene) {
+        /*
         var sphere = BABYLON.Mesh.CreateSphere("sphere1", 16, 2, scene);
         sphereMaterial = sphere.material;
         sphereCSG = BABYLON.CSG.FromMesh(sphere);
-        sphere.dispose();
+        sphere.position.x = 10;
+        //sphere.dispose();
+        */
+
+        var ground = BABYLON.Mesh.CreateGround("ground1",10,10,4,scene);
+        ground.rotation.z = Math.PI/2;
+        groundMaterial = ground.material;
+        groundCSG = BABYLON.CSG.FromMesh(ground);
+        ground.position.x = 10;
+        //ground.dispose();
+        
 
         box = BABYLON.Mesh.CreateBox("box1",1.5,scene);
-        box.position.x = 100;
+        box.rotation.x = Math.PI/4;
         box.rotation.y = Math.PI/4;
-        box.rotation.z = Math.PI/4;
       }
 
 
@@ -97,12 +109,12 @@
         alpha += 0.1;
         box.position.x = Math.cos(alpha) ;
         var boxCSG = BABYLON.CSG.FromMesh(box);
-        box.position.x = 100;
+        box.position.x += 10;
 
         globalCreatedEdges = [];
         
-        var newCSG = boxCSG.intersect(sphereCSG);
-        var newCSGMesh = newCSG.toMesh("new_csg", sphereMaterial, scene);
+        var newCSG = boxCSG.intersect(groundCSG);
+        var newCSGMesh = newCSG.toMesh("new_csg", groundMaterial, scene);
         newCSGMesh.position = new BABYLON.Vector3(0,0,0);
 
         newCSGMesh.dispose();
